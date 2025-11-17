@@ -4,6 +4,7 @@ import Home from './components/Home'
 import Register from './components/Auth/Register'
 import Login from './components/Auth/Login'
 import Profile from './components/Profile'
+import { apiLogout } from './api/auth'
 import './App.css'
 
 function ProtectedRoute({ children }) {
@@ -24,10 +25,15 @@ function AppShell() {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
 
-  const onLogout = () => {
-    try { localStorage.removeItem('token'); localStorage.removeItem('member') } catch (e) {}
-    // No API logout here to keep header stateless. The Profile page has save and could include logout button too.
-    window.location.href = '/'
+  const onLogout = async () => {
+    try {
+      await apiLogout()
+    } catch (e) {
+      // ignore API errors to keep UX smooth
+    } finally {
+      try { localStorage.removeItem('token'); localStorage.removeItem('member') } catch (e) {}
+      window.location.href = '/'
+    }
   }
 
   return (
