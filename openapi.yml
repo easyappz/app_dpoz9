@@ -1,46 +1,162 @@
 openapi: 3.0.3
 info:
-  title: Easyapp API
+  title: Simple Auth/Profile API
   version: 1.0.0
-  description: API documentation for easyapp
+servers:
+  - url: /
 paths:
-  /api/hello/:
-    get:
-      operationId: api_hello_retrieve
-      description: Get a hello world message
-      tags:
-      - api
-      security:
-      - cookieAuth: []
-      - basicAuth: []
-      - {}
+  /api/auth/register:
+    post:
+      summary: Register a new member
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+            description: Member created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Member'
+        '400':
+            description: Validation error
+  /api/auth/login:
+    post:
+      summary: Login and obtain token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
       responses:
         '200':
+          description: Auth token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Message'
-          description: ''
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Validation error
+  /api/auth/logout:
+    post:
+      summary: Logout (revoke current token)
+      tags: [Auth]
+      security:
+        - TokenAuth: []
+      responses:
+        '204':
+          description: Logged out
+        '401':
+          description: Unauthorized
+  /api/profile:
+    get:
+      summary: Get current member profile
+      tags: [Profile]
+      security:
+        - TokenAuth: []
+      responses:
+        '200':
+          description: Current member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+    put:
+      summary: Update member profile
+      tags: [Profile]
+      security:
+        - TokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
+    patch:
+      summary: Partially update member profile
+      tags: [Profile]
+      security:
+        - TokenAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileUpdateRequest'
+      responses:
+        '200':
+          description: Updated member
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Member'
+        '401':
+          description: Unauthorized
 components:
+  securitySchemes:
+    TokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Use the format 'Token <token>'
   schemas:
-    Message:
+    Member:
       type: object
       properties:
-        message:
+        id:
+          type: integer
+        email:
           type: string
-          maxLength: 200
-        timestamp:
+          format: email
+      required: [id, email]
+    RegisterRequest:
+      type: object
+      properties:
+        email:
           type: string
-          format: date-time
-          readOnly: true
-      required:
-      - message
-      - timestamp
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: sessionid
+          format: email
+        password:
+          type: string
+          minLength: 6
+      required: [email, password]
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        member:
+          $ref: '#/components/schemas/Member'
+      required: [token, member]
+    ProfileUpdateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required: [email]
